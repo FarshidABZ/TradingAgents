@@ -18,6 +18,7 @@ import time
 from rich.tree import Tree
 from rich import box
 from rich.align import Align
+import json
 from rich.rule import Rule
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -68,6 +69,7 @@ class MessageBuffer:
             "fundamentals_report": None,
             "investment_plan": None,
             "trader_investment_plan": None,
+            "trade_signal": None,
             "final_trade_decision": None,
         }
 
@@ -109,6 +111,7 @@ class MessageBuffer:
                 "fundamentals_report": "Fundamentals Analysis",
                 "investment_plan": "Research Team Decision",
                 "trader_investment_plan": "Trading Team Plan",
+                "trade_signal": "Trade Signal",
                 "final_trade_decision": "Portfolio Management Decision",
             }
             self.current_report = (
@@ -158,6 +161,9 @@ class MessageBuffer:
         if self.report_sections["trader_investment_plan"]:
             report_parts.append("## Trading Team Plan")
             report_parts.append(f"{self.report_sections['trader_investment_plan']}")
+        if self.report_sections["trade_signal"]:
+            report_parts.append("### Trade Signal")
+            report_parts.append(f"```json\n{self.report_sections['trade_signal']}\n```")
 
         # Portfolio Management Decision
         if self.report_sections["final_trade_decision"]:
@@ -627,14 +633,26 @@ def display_complete_report(final_state):
 
     # III. Trading Team Reports
     if final_state.get("trader_investment_plan"):
-        console.print(
+        trader_panels = [
             Panel(
+                Markdown(final_state["trader_investment_plan"]),
+                title="Trader",
+                border_style="blue",
+                padding=(1, 2),
+            )
+        ]
+        if final_state.get("trade_signal"):
+            trader_panels.append(
                 Panel(
-                    Markdown(final_state["trader_investment_plan"]),
-                    title="Trader",
+                    Markdown(f"```json\n{json.dumps(final_state['trade_signal'], indent=2)}\n```"),
+                    title="Trade Signal",
                     border_style="blue",
                     padding=(1, 2),
-                ),
+                )
+            )
+        console.print(
+            Panel(
+                Columns(trader_panels, equal=True, expand=True),
                 title="III. Trading Team Plan",
                 border_style="yellow",
                 padding=(1, 2),
@@ -983,8 +1001,12 @@ def run_analysis():
                     message_buffer.update_report_section(
                         "trader_investment_plan", chunk["trader_investment_plan"]
                     )
-                    # Set first risk analyst to in_progress
-                    message_buffer.update_agent_status("Risky Analyst", "in_progress")
+                if "trade_signal" in chunk and chunk["trade_signal"]:
+                    message_buffer.update_report_section(
+                        "trade_signal", json.dumps(chunk["trade_signal"], indent=2)
+                    )
+                # Set first risk analyst to in_progress
+                message_buffer.update_agent_status("Risky Analyst", "in_progress")
 
                 # Risk Management Team - Handle Risk Debate State
                 if "risk_debate_state" in chunk and chunk["risk_debate_state"]:
@@ -1088,7 +1110,10 @@ def run_analysis():
         # Update final report sections
         for section in message_buffer.report_sections.keys():
             if section in final_state:
-                message_buffer.update_report_section(section, final_state[section])
+                value = final_state[section]
+                if section == "trade_signal" and isinstance(value, dict):
+                    value = json.dumps(value, indent=2)
+                message_buffer.update_report_section(section, value)
 
         # Display the complete final report
         display_complete_report(final_state)
