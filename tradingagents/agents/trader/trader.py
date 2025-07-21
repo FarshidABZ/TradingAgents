@@ -27,13 +27,10 @@ def create_trader(llm, memory):
             "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
         }
 
-        messages = [
+       messages = [
             {
                 "role": "system",
-                "content": f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation.
-                \n\nAlways include open and close position points with take-profit and stop-loss levels. Conclude your response with JSON in the format:\n"
-                {{\n  "action": "OPEN" | "CLOSE" | "HOLD",\n  "symbol": "<ticker>",\n  "side": "BUY" | "SELL",\n  "entry_price": <float>,\n  "take_profit": <float>,\n  "stop_loss": <float>,\n  "exit_price": <float>,\n  "confidence": "<low|medium|high>",\n  "reason": "<rationale>"\n}}
-                \nIf opening or closing, include entry_price or exit_price respectively. Ensure take_profit is at least 1.5 times the stop_loss distance and stop_loss is below purchase for BUY trades and above for SELL trades. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situations you traded in and the lessons learned: {past_memory_str}"""
+                "content": f"""You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation. Do not forget to utilize lessons from past decisions to learn from your mistakes. Here is some reflections from similar situatiosn you traded in and the lessons learned: {past_memory_str}"""
             },
             context,
         ]
